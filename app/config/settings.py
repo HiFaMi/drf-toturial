@@ -32,7 +32,6 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'rest_framework',
-    'pygments',
     'snippets',
 
     'django.contrib.admin',
