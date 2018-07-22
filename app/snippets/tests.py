@@ -35,8 +35,6 @@ class SnippetListTest(APITestCase):
         data = json.loads(response.content)
         self.assertEqual(len(data), Snippet.objects.count())
 
-
-
     def test_snippet_list_order_by_created_desending(self):
         """
         Snippet List의 결과가 생성일자 내림차순인지 확인
@@ -60,3 +58,29 @@ class SnippetListTest(APITestCase):
             [item['pk'] for item in data],
             list(Snippet.objects.order_by('-created').values_list('pk', flat=True)),
         )
+
+
+class SnippetCreateTest(APITestCase):
+    def test_snippet_create_status_code(self):
+        """
+        201이 돌아오는지
+        :return:
+        """
+        Snippet.objects.create(code="print ('hello')")
+        response = self.client.post('/snippets/django_view/snippets/')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+
+    def test_snippet_create_save_db(self):
+        """
+        요청 후 실제 DB에 저장되었는지 (모든 필드값이 정상적으로 저장되는지)
+        :return:
+        """
+        pass
+
+    def test_snippet_create_missing_code_raise_exception(self):
+        """
+        'code' 데이터가 주어지지 않을 경우 적절한 Exception이 발생하는지
+        :return:
+        """
+        pass
