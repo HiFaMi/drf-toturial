@@ -75,7 +75,6 @@ class SnippetCreateTest(APITestCase):
             content_type="application/json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-
     def test_snippet_create_save_db(self):
         """
         요청 후 실제 DB에 저장되었는지 (모든 필드값이 정상적으로 저장되는지)
