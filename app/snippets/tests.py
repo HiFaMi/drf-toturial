@@ -82,20 +82,35 @@ class SnippetCreateTest(APITestCase):
         :return:
         """
         # 하나 생성 하였을 경우 생성한 것과 데이터 베이스를 비교
-        dummy = {"code": "print('hello)"}
-        self.client.post(
-            '/snippets/django_view/snippets/',
-            json.dumps(dummy),
-            content_type="application/json")
-        another_response = self.client.get('/snippets/django_view/snippets/')
-        data = json.loads(another_response.content)
+        # dummy = {"code": "print('hello)"}
+        # self.client.post(
+        #     '/snippets/django_view/snippets/',
+        #     json.dumps(dummy),
+        #     content_type="application/json")
+        # another_response = self.client.get('/snippets/django_view/snippets/')
+        # data = json.loads(another_response.content)
+        # self.assertEqual(
+        #     data[0]['code'],
+        #     Snippet.objects.last().code
+        # )
+
+        # 여러개 생성 한 다음 데이터 베이스와 비교
+        dummy = [{"code": "{}".format(i)} for i in range(random.randint(5, 10))]
+
+        for dummy_index in range(len(dummy)):
+            self.client.post(
+                '/snippets/django_view/snippets/',
+                json.dumps(dummy[dummy_index]),
+                content_type="application/json"
+            )
+
+        response = self.client.get('/snippets/django_view/snippets/')
+        data = json.loads(response.content)
+
         self.assertEqual(
-            data[0]['code'],
-            Snippet.objects.last().code
+            [item['code'] for item in data],
+            list(Snippet.objects.order_by('-created').values_list('code', flat=True))
         )
-
-
-
 
     def test_snippet_create_missing_code_raise_exception(self):
         """
