@@ -56,6 +56,8 @@ class SnippetListTest(APITestCase):
 
         self.assertEqual(
             [item['pk'] for item in data],
+            # flat default = False 각각의 튜플이 반환된 쿼리셋 리스트를 준다.
+            # flat = True의 경우 반환하고자 하는 객체 그대로 반환된 쿼리셋 리스트를 준다.
             list(Snippet.objects.order_by('-created').values_list('pk', flat=True)),
         )
 
@@ -66,8 +68,11 @@ class SnippetCreateTest(APITestCase):
         201이 돌아오는지
         :return:
         """
-        Snippet.objects.create(code="print ('hello')")
-        response = self.client.post('/snippets/django_view/snippets/')
+        dummy = {"code": "print"}
+        response = self.client.post(
+            '/snippets/django_view/snippets/',
+            json.dumps(dummy),
+            content_type="application/json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
 
@@ -76,7 +81,21 @@ class SnippetCreateTest(APITestCase):
         요청 후 실제 DB에 저장되었는지 (모든 필드값이 정상적으로 저장되는지)
         :return:
         """
-        pass
+        # 하나 생성 하였을 경우 생성한 것과 데이터 베이스를 비교
+        dummy = {"code": "print('hello)"}
+        self.client.post(
+            '/snippets/django_view/snippets/',
+            json.dumps(dummy),
+            content_type="application/json")
+        another_response = self.client.get('/snippets/django_view/snippets/')
+        data = json.loads(another_response.content)
+        self.assertEqual(
+            data[0]['code'],
+            Snippet.objects.last().code
+        )
+
+
+
 
     def test_snippet_create_missing_code_raise_exception(self):
         """
