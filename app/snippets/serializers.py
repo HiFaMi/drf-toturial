@@ -1,10 +1,23 @@
+from django.contrib.auth import get_user_model
 from django.forms import widgets
 from rest_framework import serializers
 from .models import Snippet, LANGUAGE_CHOICES, STYLE_CHOICES
 
+User = get_user_model()
 __all__ = (
-    'SnippetSerializer'
+    'UserSerializer',
+    'SnippetSerializer',
 )
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            'pk',
+            'username',
+            'snippets',
+        )
 
 
 class SnippetSerializer(serializers.ModelSerializer):
@@ -17,6 +30,7 @@ class SnippetSerializer(serializers.ModelSerializer):
             'linenos',
             'language',
             'style',
+            'owner',
         )
 
     def create(self, validated_data):
