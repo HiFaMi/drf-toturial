@@ -12,6 +12,11 @@ from .models import Snippet
 from snippets.serializers import SnippetSerializer
 
 User = get_user_model()
+DUMMY_USER_USERNAME = 'dummy_username'
+
+
+def get_dummy_user():
+    return User.objects.create_user(username=DUMMY_USER_USERNAME)
 
 
 class SnippetListTest(APITestCase):
@@ -34,9 +39,9 @@ class SnippetListTest(APITestCase):
         Snippet List를 요청시 DB에 있는 자료수와 같은 갯수가 리턴되는지 테스트
         :return:
         """
-        User.objects.create(username='k')
+        user = get_dummy_user()
         for i in range(random.randint(10, 100)):
-            Snippet.objects.create(code='a={}'.format(i), owner=User.objects.get(username='k'))
+            Snippet.objects.create(code='a={}'.format(i), owner=user)
         response = self.client.get(self.URL)
         data = json.loads(response.content)
         self.assertEqual(len(data), Snippet.objects.count())
@@ -46,9 +51,9 @@ class SnippetListTest(APITestCase):
         Snippet List의 결과가 생성일자 내림차순인지 확인
         :return:
         """
-        User.objects.create(username='k')
+        user = get_dummy_user()
         for i in range(random.randint(5, 10)):
-            Snippet.objects.create(code='a={}'.format(i), owner=User.objects.get(username='k'))
+            Snippet.objects.create(code='a={}'.format(i), owner=user)
         response = self.client.get(self.URL)
         data = json.loads(response.content)
         # snippets = Snippet.objects.order_by('-created')
@@ -73,8 +78,8 @@ class SnippetCreateTest(APITestCase):
     URL = '/snippets/generic_cbv/snippets/'
 
     def authenticate_user(self):
-        User.objects.create(username='k')
-        user = User.objects.get(username='k')
+
+        user = get_dummy_user()
         self.client = APIClient()
         return self.client.force_authenticate(user=user)
 
@@ -151,6 +156,7 @@ class SnippetCreateTest(APITestCase):
 
         for key in snippet_data:
             self.assertEqual(data[key], snippet_data[key])
+
 
     def test_snippet_create_missing_code_raise_exception(self):
         """
