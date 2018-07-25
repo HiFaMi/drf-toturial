@@ -22,7 +22,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class SnippetSerializer(serializers.ModelSerializer):
 
-    owner = serializers.ReadOnlyField(source='owner.username')
+    owner = UserSerializer()
 
     class Meta:
         model = Snippet

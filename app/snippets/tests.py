@@ -1,5 +1,7 @@
 import json
 import random
+from django.utils.six import BytesIO
+
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -9,7 +11,7 @@ from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 
 from .models import Snippet
-from snippets.serializers import SnippetSerializer
+from snippets.serializers import SnippetListSerializer
 
 User = get_user_model()
 DUMMY_USER_USERNAME = 'dummy_username'
@@ -24,7 +26,8 @@ class SnippetListTest(APITestCase):
     Snippet List요청에 대한 테스트
     """
 
-    URL = '/snippets/django_view/snippets/'
+    URL = '/snippets/generic_cbv/snippets/'
+    DECENDING_URL = '/snippets/generic_cbv/snippets/?page='
 
     def test_status_code(self):
         """
@@ -44,7 +47,7 @@ class SnippetListTest(APITestCase):
             Snippet.objects.create(code='a={}'.format(i), owner=user)
         response = self.client.get(self.URL)
         data = json.loads(response.content)
-        self.assertEqual(len(data), Snippet.objects.count())
+        self.assertEqual(data['count'], Snippet.objects.count())
 
     def test_snippet_list_order_by_created_desending(self):
         """
@@ -54,8 +57,9 @@ class SnippetListTest(APITestCase):
         user = get_dummy_user()
         for i in range(random.randint(5, 10)):
             Snippet.objects.create(code='a={}'.format(i), owner=user)
-        response = self.client.get(self.URL)
+        response = self.client.get(self.DECENDING_URL+'1')
         data = json.loads(response.content)
+
         # snippets = Snippet.objects.order_by('-created')
         #
         # data_pk_list = []
@@ -66,11 +70,25 @@ class SnippetListTest(APITestCase):
         # for snippet in snippets:
         #     snippets_pk_list.append(snippet.pk)
 
+        # self.assertEqual(
+        #     [item['pk'] for item in data],
+        #     # flat default = False 각각의 튜플이 반환된 쿼리셋 리스트를 준다.
+        #     # flat = True의 경우 반환하고자 하는 객체 그대로 반환된 쿼리셋 리스트를 준다.
+        #     list(Snippet.objects.order_by('-created').values_list('pk', flat=True)),
+        # )
+        pk_list = []
+
+        for i in range((data['count']//3)+1):
+            if data['next']:
+                response = self.client.get(self.DECENDING_URL + '{}'.format(i+1))
+                data = json.loads(response.content)
+
+                for item in data['results']:
+                    pk_list.append(item['pk'])
+
         self.assertEqual(
-            [item['pk'] for item in data],
-            # flat default = False 각각의 튜플이 반환된 쿼리셋 리스트를 준다.
-            # flat = True의 경우 반환하고자 하는 객체 그대로 반환된 쿼리셋 리스트를 준다.
-            list(Snippet.objects.order_by('-created').values_list('pk', flat=True)),
+            pk_list,
+            list(Snippet.objects.order_by('created').values_list('pk', flat=True)),
         )
 
 
@@ -89,15 +107,16 @@ class SnippetCreateTest(APITestCase):
         :return:
         """
 
-        self.authenticate_user()
-
+        # self.authenticate_user()
+        user = get_dummy_user()
+        self.client.force_authenticate(user=user)
         dummy = {
-            "code": "print",
-
+            "code": "asdf",
         }
+        data = json.dumps(dummy)
         response = self.client.post(
             self.URL,
-            json.dumps(dummy),
+            data,
             content_type="application/json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -154,9 +173,15 @@ class SnippetCreateTest(APITestCase):
         )
         data = json.loads(response.content)
 
-        for key in snippet_data:
-            self.assertEqual(data[key], snippet_data[key])
+        check_field = [
+            'title',
+            'linenos',
+            'language',
+            'style',
+        ]
 
+        for field in check_field:
+            self.assertEqual(data[field], snippet_data[field])
 
     def test_snippet_create_missing_code_raise_exception(self):
         """
