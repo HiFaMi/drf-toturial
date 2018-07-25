@@ -1,14 +1,17 @@
 import json
 import random
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.parsers import JSONParser
 
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 
-from snippets.models import Snippet
+from .models import Snippet
 from snippets.serializers import SnippetSerializer
+
+User = get_user_model()
 
 
 class SnippetListTest(APITestCase):
@@ -31,8 +34,9 @@ class SnippetListTest(APITestCase):
         Snippet List를 요청시 DB에 있는 자료수와 같은 갯수가 리턴되는지 테스트
         :return:
         """
+        User.objects.create(username='k')
         for i in range(random.randint(10, 100)):
-            Snippet.objects.create(code='a={}'.format(i))
+            Snippet.objects.create(code='a={}'.format(i), owner=User.objects.get(username='k'))
         response = self.client.get(self.URL)
         data = json.loads(response.content)
         self.assertEqual(len(data), Snippet.objects.count())
@@ -42,8 +46,9 @@ class SnippetListTest(APITestCase):
         Snippet List의 결과가 생성일자 내림차순인지 확인
         :return:
         """
+        User.objects.create(username='k')
         for i in range(random.randint(5, 10)):
-            Snippet.objects.create(code='a={}'.format(i))
+            Snippet.objects.create(code='a={}'.format(i), owner=User.objects.get(username='k'))
         response = self.client.get(self.URL)
         data = json.loads(response.content)
         # snippets = Snippet.objects.order_by('-created')
@@ -66,12 +71,25 @@ class SnippetListTest(APITestCase):
 
 class SnippetCreateTest(APITestCase):
     URL = '/snippets/generic_cbv/snippets/'
+
+    def authenticate_user(self):
+        User.objects.create(username='k')
+        user = User.objects.get(username='k')
+        self.client = APIClient()
+        return self.client.force_authenticate(user=user)
+
     def test_snippet_create_status_code(self):
         """
         201이 돌아오는지
         :return:
         """
-        dummy = {"code": "print"}
+
+        self.authenticate_user()
+
+        dummy = {
+            "code": "print",
+
+        }
         response = self.client.post(
             self.URL,
             json.dumps(dummy),
@@ -114,6 +132,8 @@ class SnippetCreateTest(APITestCase):
         #     list(Snippet.objects.order_by('-created').values_list('code', flat=True))
         # )
 
+        self.authenticate_user()
+
         snippet_data = {
             'title': 'SnippetTitle',
             'code': 'SnippetCode',
@@ -132,12 +152,13 @@ class SnippetCreateTest(APITestCase):
         for key in snippet_data:
             self.assertEqual(data[key], snippet_data[key])
 
-
     def test_snippet_create_missing_code_raise_exception(self):
         """
         'code' 데이터가 주어지지 않을 경우 적절한 Exception이 발생하는지
         :return:
         """
+        self.authenticate_user()
+
         snippet_data = {
             'title': 'SnippetTitle',
             'linenos': True,
