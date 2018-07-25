@@ -1,5 +1,5 @@
 from ..models import Snippet
-from ..serializers import SnippetSerializer
+from ..serializers import SnippetListSerializer
 
 from django.http import Http404
 
@@ -14,11 +14,11 @@ class SnippetList(APIView):
     """
     def get(self, request, format=None):
         snippets = Snippet.objects.all()
-        serializer = SnippetSerializer(snippets, many=True)
+        serializer = SnippetListSerializer(snippets, many=True)
         return Response(serializer.data)
 
     def post(self, request, format=None):
-        serializer = SnippetSerializer(data=request.data)
+        serializer = SnippetListSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -38,12 +38,12 @@ class SnippetDetail(APIView):
 
     def get(self, request, pk, format=None):
         snippet = self.get_object(pk)
-        serializer = SnippetSerializer(snippet)
+        serializer = SnippetListSerializer(snippet)
         return Response(serializer.data)
 
     def put(self, request, pk, format=None):
         snippet = self.get_object(pk)
-        serializer = SnippetSerializer(snippet, data=request.data)
+        serializer = SnippetListSerializer(snippet, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)

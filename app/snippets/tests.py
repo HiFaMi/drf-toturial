@@ -77,14 +77,17 @@ class SnippetListTest(APITestCase):
         #     list(Snippet.objects.order_by('-created').values_list('pk', flat=True)),
         # )
         pk_list = []
-
-        for i in range((data['count']//3)+1):
+        i = 0
+        while True:
             if data['next']:
                 response = self.client.get(self.DECENDING_URL + '{}'.format(i+1))
                 data = json.loads(response.content)
 
                 for item in data['results']:
                     pk_list.append(item['pk'])
+                i += 1
+            else:
+                break
 
         self.assertEqual(
             pk_list,
